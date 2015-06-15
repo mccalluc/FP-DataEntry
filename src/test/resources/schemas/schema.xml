@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+<schema name="example" version="1.5">
+	<fields>
+		<field name="_fp_internal_id" type="fpID" indexed="true" stored="false" required="true" multiValued="false"/>
+		<!-- NOTE: Everything below, except for the *_index fields, should correspond to DwcTuples. 
+		(... which are in turn composed of DwcTerms.) The values stored are actually JSON arrays, and not plain text. -->
+		<field name="recordNumber" type="fpCollectorNumber" indexed="true" stored="true" required="false" multiValued="true"/>
+		<field name="recordedBy" type="fpCollectorName" indexed="true" stored="true" required="false" multiValued="false"/>
+		<field name="typeStatus" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+		<field name="geography_index" type="fpGeography" indexed="true" stored="false" required="false" multiValued="true"/>
+		<field name="country" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+		<field name="stateCountyCity" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+		<field name="verbatimLocality" type="string" indexed="false" stored="true" required="false" multiValued="false"/> 
+		<!-- GBIF has lat/long *and* verbatim-lat/verbatim-long. Perhaps ignore one or the other, and change back to multiValued="false"? -->
+		<field name="latitudeLongitude" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="eventDate" type="fpDate" indexed="true" stored="true" required="false" multiValued="false"/>
+		<field name="habitat" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+		<field name="elevationInMeters" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+		<field name="taxon_index" type="fpTaxon" indexed="true" stored="false" required="false" multiValued="true"/> 
+		<!-- When pulling from the SQL, we took higher-level taxa to be single-valued... 
+		but the GBIF download has a normal and a verbatim-* for each of these, so make them multi. -->
+		<field name="kingdom" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="phylum" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="class" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="order" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="family" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="scientificName" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+		<field name="exsiccateNumber" type="fpMinimallySearchable" indexed="true" stored="true" required="false" multiValued="false"/>
+		<field name="exsiccateTitle" type="fpExsiccateTitle" indexed="true" stored="true" required="false" multiValued="false"/>
+	</fields>
+	<uniqueKey>_fp_internal_id</uniqueKey>
+	<copyField source="kingdom" dest="taxon_index"/>
+	<copyField source="phylum" dest="taxon_index"/>
+	<copyField source="class" dest="taxon_index"/>
+	<copyField source="order" dest="taxon_index"/>
+	<copyField source="family" dest="taxon_index"/>
+	<copyField source="scientificName" dest="taxon_index"/>
+	<copyField source="country" dest="geography_index"/>
+	<copyField source="stateCountyCity" dest="geography_index"/>
+	<copyField source="verbatimLocality" dest="geography_index"/>
+	<types>
+		<fieldType name="fpMinimallySearchable" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+			<!-- Remember that everything is wrapped in a JSON list, so some kind of tokenization is essential, even for simple fields. -->
+			<analyzer>
+				<tokenizer class="solr.StandardTokenizerFactory"/>
+			</analyzer>
+		</fieldType>
+		<fieldType name="fpCollectorNumber" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+			<analyzer>
+				<tokenizer class="solr.KeywordTokenizerFactory"/>
+				<filter class="solr.LowerCaseFilterFactory"/>
+				<filter class="solr.TrimFilterFactory"/>
+				<filter class="solr.PatternReplaceFilterFactory" pattern="[^a-z0-9]" replacement="" replace="all"/>
+			</analyzer>
+		</fieldType>
+		<fieldType name="fpCollectorName" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+			<analyzer>
+				<charFilter class="solr.PatternReplaceCharFilterFactory" replacement="" pattern="^(?i)col[^:]*:"/>
+				<charFilter class="solr.PatternReplaceCharFilterFactory" replacement="" pattern="(?i)\b(du|de|dr|van|den)\b"/>
+				<tokenizer class="solr.KeywordTokenizerFactory"/>
+				<filter class="solr.ASCIIFoldingFilterFactory"/>
+				<filter class="solr.LowerCaseFilterFactory"/> <!-- Capture just the first two sequences of two or more letters. -->
+				<filter class="solr.PatternCaptureGroupFilterFactory" preserve_original="false"
+					pattern="^\W*(?:\w\W+)*(\p{L}{2,})(?:[^,&amp;/\p{L}]+(?:\p{L}[^,&amp;/\p{L}]+)*(\p{L}{2,}))?"/>
+				<!-- 
+				             Skip while no more than one letter in a row
+				                           2-or-more letters in a row
+				                                      Optionally, skip more isolated letters
+				                                         and give up if we see separating punctuation
+				                                                                          And get the second 2-or-more letters.
+				             ^\W*(?:\w\W+)*
+				                           (\p{L}{2,})
+				                                      (?:[^,&amp;/\p{L}]+(?:\p{L}[^,&amp;/\p{L}]+)*           )?
+				                                                                                   (\p{L}{2,})
+				-->
+			</analyzer>
+		</fieldType>
+		<fieldType name="fpTaxon" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+			<analyzer>
+				<tokenizer class="solr.LowerCaseTokenizerFactory"/> <!-- Names should be plain ascii already. -->
+			</analyzer>
+		</fieldType>
+		<fieldType name="fpGeography" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+			<analyzer>
+				<tokenizer class="solr.StandardTokenizerFactory"/>
+				<filter class="solr.LengthFilterFactory" min="2" max="1023"/><!-- Max is arbitrary, but required. -->
+				<filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords_en.txt" format="snowball"/> 
+				<!-- Used to include: stopwords_es.txt, stopwords_de.txt, stopwords_fr.txt 
+					... but that made many 2-letter country abbreviations unsearchable. 
+					Even now, "IN" (for India) or "BE" (Belgium) won't work. I'm not sure what the right trade-off is. 
+					TODO: Do a real index with it, and see if having stopwords makes an appreciable difference. (indexing time / index size / search time) -->
+				<filter class="solr.ASCIIFoldingFilterFactory"/>
+				<filter class="solr.LowerCaseFilterFactory"/>
+			</analyzer>
+		</fieldType>
+		<fieldType name="fpExsiccateTitle" class="solr.TextField" sortMissingLast="true" omitNorms="true"> <!-- TODO: needs work? -->
+			<analyzer>
+				<tokenizer class="solr.StandardTokenizerFactory"/>
+				<filter class="solr.LowerCaseFilterFactory"/>
+				<filter class="solr.PatternReplaceFilterFactory" pattern="\(.*" replacement="" replace="all"/>
+			</analyzer>
+		</fieldType>
+		<fieldType name="fpDate" class="solr.TextField" sortMissingLast="true" omitNorms="true"> 
+			<!-- Given YYYY-MM-DD, generate these tokens for indexing: YYYY YYYY-MM YYYY-MM-DD 
+			... but DO NOT tokenize queries: YYYY-MM should match YYYY-MM and YYYY-MM-DD but not plain YYYY -->
+			<analyzer type="index"> 
+				<!-- The input is actually wrapped in a JSON list, so we need to strip the extraneous characters. -->
+				<charFilter class="solr.PatternReplaceCharFilterFactory" pattern="[^0-9-]" replacement=""/>
+				<tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="-"/>
+			</analyzer>
+			<analyzer type="query">
+				<tokenizer class="solr.KeywordTokenizerFactory"/>
+			</analyzer>
+		</fieldType>
+		<fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+		<fieldType name="fpID" class="solr.StrField" sortMissingLast="true"/>
+	</types>
+</schema>

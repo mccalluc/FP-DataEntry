@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	NOTE:
+	
+	The DTD is useful as documentation, and helps the IDE point out errors,
+	but it doesn't actually work: the embedded solr schema can't be modeled
+	in DTD because the attribute names may be arbitrary.
+-->
+
+<!ELEMENT configuration (back-end-configuration, server-configuration?, term-tuple-configuration, indexer-configuration?, front-end-configuration) >
+	
+	<!ELEMENT back-end-configuration (query-engine-class | (solr-directory, solr-files) | (solr-uri, solr-file-references))>
+	
+		<!ELEMENT query-engine-class (#PCDATA)> 
+			<!-- Given a class name, an instance of the named class will be used for the back-end, instead of solr. -->
+	
+		<!-- or... -->
+	
+		<!ELEMENT solr-directory (#PCDATA)> 
+			<!-- Absolute path to location of solr index directory -->
+		<!ELEMENT solr-files (item+)> 
+			<!-- The "key" attribute is the name of the file to create: 
+			At the very least, a schema.xml and solrconfig.xml, but could include other files, like stop-word lists. -->
+		
+		<!-- or... -->
+		
+		<!ELEMENT solr-uri (#PCDATA)> 
+			<!-- Base URI of local Solr instance -->
+		<!ELEMENT solr-file-references (item)> 
+			<!-- The "key" attribute should be "schema.xml", 
+			and the content should be the path for the local Solr's schema.xml. -->
+		
+	<!ELEMENT server-configuration (port)>
+		<!-- This is only needed if you'll be launching with Jetty. -->
+	
+		<!ELEMENT port (#PCDATA)> 
+			<!-- Port to be used if starting Jetty; Ignored by Tomcat. -->
+	
+	<!ELEMENT term-tuple-configuration (tuples-map)>
+	
+		<!ELEMENT tuples-map (item+)> 
+			<!-- This provides a way of binding together data which always belong together. For example:
+			<item key="latitudeLongitude">
+				<item>Latitude</item>
+				<item>Longitude</item>
+			</item> -->
+		
+	<!ELEMENT indexer-configuration (ingest-file, ingest-type?, encoding?, encoding-correction?, delimiter?, quote-character?, null-marker?, column-map?) >
+		<!-- This is only used when solr-directory and solr-files are provided. -->
+		
+		<!ELEMENT ingest-file (#PCDATA)> 
+			<!-- Path of the field to be read. If you want multiple files to be indexed, 
+			right now you would run the indexer multiple times, changing the value here each time. -->
+		
+		<!ELEMENT ingest-type (#PCDATA)> 
+			<!-- Optionally, specify a different kind of input file. "GBIF" is the only option right now...
+			TODO: change this to take the name of an custom ingester class. -->
+		
+		<!ELEMENT encoding (#PCDATA)> 
+			<!-- Optional. Defaults to utf-8. -->
+		
+		<!ELEMENT encoding-correction (#PCDATA)> 
+			<!-- Optionally, if "FIX_A_TILDE" is given, some encoding problems may be fixed.
+			(But it's better not to give yourself problems in the first place.) -->
+		
+		<!ELEMENT delimiter (#PCDATA)> 
+			<!-- Optional -->
+		
+		<!ELEMENT quote-character (#PCDATA)> 
+			<!-- Optional. (There is no mechanism for quoting the quote character inside a quoted string.) -->
+		
+		<!ELEMENT null-marker (#PCDATA)> 
+			<!-- Optional. A SQL database might represent a NULL in the database as "NULL" or "\N" in an export. -->
+			
+		<!ELEMENT column-map (item+)> 
+			<!-- Optional. Lets you map the column headings on your file to the "Term" names you'll specify here.
+			Not necessary if you can control the headings of the export, or can edit it after the fact. -->
+			
+	<!ELEMENT front-end-configuration (title-html, blurb-html?, q-solr, input-fields, selector-function?, controlled-vocabularies?, require-confirmation?, pre-js?)>
+	
+		<!ELEMENT title-html (#PCDATA)>
+			<!-- Title of the demo page and of the bookmarklet. -->
+		
+		<!ELEMENT blurb-html ANY>
+			<!-- Any explanatory text you'd like on the demo page, above the form. -->
+		
+		<!ELEMENT q-solr (item+)>
+			<!-- Mapping from query paramters to solr fields. -->
+		
+		<!ELEMENT input-fields (item+)>
+			<!-- Defines the fields available in the front end demo.
+			Looking at the attributes:
+			
+			The "key" will usually be the name attribute of the input, but if a "selector-function" is given below,
+			it can be any string the selector-function can use to identify a unique input.
+			
+			The "label" is the human readable label beside it. (The name is used if unspecified.)
+			
+			At query time, inputs are mapped to query parameters with "q-name".
+			
+			When the results return, they are mapped back to inputs with "a-name".-->
+		
+		<!ELEMENT selector-function (#PCDATA)>
+			<!-- An anonymous javascript function, which, given an input-field key string,
+			will return the appropriate DOM node. -->
+		
+		<!ELEMENT controlled-vocabularies (item+)>
+			<!-- Lists the terms where the UI should offer choices from a controlled vocabulary.
+			The sub-elements, if present, support a mock-up of the AJAX interface which you
+			would need to implement on your collection management application. -->
+		
+		<!ELEMENT require-confirmation (#PCDATA)>
+			<!-- If "true", adds a "confirm" button that needs to be clicked 
+			before values are copied back to the parent form. -->
+		
+		<!ELEMENT pre-js (#PCDATA)>
+			<!-- JavaScript to be run before the plug-in begins.
+			Typically this will be used to emulate the user actions
+			needed to make all necessary form fields available. -->
+
+<!ELEMENT item ANY>
+<!ATTLIST item 
+	key CDATA #IMPLIED
+	label CDATA #IMPLIED
+	q-name CDATA #IMPLIED
+	a-name CDATA #IMPLIED
+	default CDATA #IMPLIED>
+	

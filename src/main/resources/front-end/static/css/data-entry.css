@@ -1,0 +1,38 @@
+body {
+	font-family: Sans-Serif;
+}
+
+label {
+	display: block;
+	clear: both;
+}
+
+input,select,button {
+	float: right;
+}
+
+button#confirm {
+	float: none;
+}
+
+/*
+ * Copy this to you server, and then edit it to fit your preferences:
+ *
+
+#<id at top of section> {
+	padding-top: 1em;
+}
+
+#<id at top of sub-section> {
+	padding-top: 0.5em;
+}
+
+#<id you don't want to see> {
+	display: none;
+}
+
+*/
+
+tr {
+	vertical-align: top;
+}

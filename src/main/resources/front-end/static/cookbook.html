@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<!--
+FP-DataEntry
+(C) 2014 President and Fellows of Harvard College
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+<html>
+	<head>
+		<title>Cookbook: FP Data Entry Plugin</title>
+		<style>
+			body { font-family: Sans-Serif; }
+			dt { margin-top: 1em; font-style: italic; }
+			dd { margin-top: 0.5em; }
+		</style>
+	</head>
+	<body>
+		<dl>
+			<dt>Filling in the fields automatically is great, but the iframe is a distraction.</dt>
+			<dd>
+				It isn't actually necessary to add any noticeable UI elements: 
+				The iframe needs to be present, but you can specify the width and height as just 1x1,
+				or use css to hide it entirely.
+			</dd>
+			
+			<dt>Can the style of the iframe match the style of the rest of my application?</dt>
+			<dd>
+				You can specify css files to be loaded in the iframe with the css_urls parameter.
+			</dd>
+			
+			<dt>Can the workflow be more fluid?</dt>
+			<dd>
+				In the demo, a button click brings up the iframe, but it could be lighter-weight:
+				For example, it could be triggered by onchange, or even by onload, so that
+				it's there and available without any special action from the user.
+			</dd>
+			
+			<dt>What if I can't change the html in the host data entry application?</dt>
+			<dd>
+				The plugin can also be started with a bookmarklet (ie, a "javascript:" URI). 
+				Instead of clicking a button on the page, you'll need to click a bookmark,
+				but apart from that, the functionality is the same.
+			</dd>
+			
+			<dt>Could information from two different sources be combined?</dt>
+			<dd>
+				I can think of two ways to do this: One would be to create an index which combines both sources.
+				A different approach would be to just have two independent iframes.
+			</dd>
+			
+			<dt>Could this tool be used to directly query a database, instead of indexing everything before hand?</dt>
+			<dd>
+				Maybe: <code>GenericRecordsForIndexAndUpdate</code> could be extended to get data from a database
+				instead of from solr. I haven't tried.
+			</dd>
+			
+			<dt>Could this tool be used on top of another web-service, instead of indexing everything before hand?</dt>
+			<dd>
+				Maybe: <code>GenericRecordsForIndexAndUpdate</code> could also be extended so that instead of querying the
+				embedded solr, it hits some API on the web, parses the results, and proxies them back. Or, conceivably,
+				if the back-end API is JSONP or it supports CORS, the change handler in <code>core.js</code> could be changed
+				to hit that API instead of the back end server. I haven't done either of these, so it would be an experiment.
+			</dd>
+		</dl>
+	</body>
+</html>

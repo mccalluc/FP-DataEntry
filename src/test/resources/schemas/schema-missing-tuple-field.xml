@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+<schema name="example" version="1.5">
+
+	<fields>
+		<field name="_fp_internal_id" type="fpID" indexed="true" stored="false" required="true" multiValued="false"/>
+		<field name="text" type="fpGeography" indexed="true"/>
+  
+		<field name="recordNumber" type="fpCollectorNumber" indexed="true"/>		
+		<field name="recordedBy" type="fpCollectorName" indexed="true"/>
+		
+		<field name="geography_index" type="fpGeography" indexed="true"/>
+		<field name="country" type="fpGeography" indexed="false"/>
+		<field name="stateCountyCity" type="fpGeography" indexed="false"/>
+		<!-- <field name="verbatimLocality" type="string" indexed="false"/> -->
+	</fields>
+
+	<uniqueKey>_fp_internal_id</uniqueKey>
+
+	<copyField source="country" dest="geography_index"/>
+	<copyField source="stateCountyCity" dest="geography_index"/>
+	<copyField source="verbatimLocality" dest="geography_index"/>
+	
+	<types>
+		<fieldType name="fpCollectorNumber"/>		
+		<fieldType name="fpCollectorName"/>
+		<fieldType name="fpGeography"/>
+		<fieldType name="fpID"/>
+	</types>
+
+</schema>

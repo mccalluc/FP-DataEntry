@@ -1,0 +1,49 @@
+<!DOCTYPE configuration>
+<configuration>
+	
+	<back-end-configuration>
+		<solr-directory>/tmp/not-actually-used</solr-directory>
+		<solr-files>
+			<item key="schema.xml">
+				<!-- For more information, see http://wiki.apache.org/solr/SchemaXml -->
+				<schema name="example" version="1.5">
+					<fields>
+						<field name="_fp_internal_id" type="fpID" indexed="true" stored="false" required="true" multiValued="false"/>
+						<field name="geography_index" type="fpGeography" indexed="true" stored="false" required="false" multiValued="true"/>
+						<field name="country" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+					</fields>
+					<uniqueKey>_fp_internal_id</uniqueKey>
+					<copyField source="country" dest="geography_index"/>
+					<types>
+						<fieldType name="fpGeography" class="solr.TextField" sortMissingLast="true" omitNorms="true"/>
+						<fieldType name="fpID" class="solr.StrField" sortMissingLast="true"/>
+					</types>
+				</schema>
+			</item>
+			<item key="schema.xml">
+				<duplicate></duplicate>
+			</item>
+		</solr-files>
+	</back-end-configuration>
+
+	<term-tuple-configuration>
+		<tuples-map>
+			<item key="country">
+				<item>country</item>
+			</item>
+		</tuples-map>
+	</term-tuple-configuration>
+
+	<front-end-configuration>
+	
+		<q-solr>
+			<item key="geography">geography_index</item>
+		</q-solr>
+	
+		<input-fields>
+			<item key="my_country"		label="country"				q-name="geography"	a-name="country"	default="Sweden" />
+		</input-fields>
+
+	</front-end-configuration>
+
+</configuration>

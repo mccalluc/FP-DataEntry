@@ -1,0 +1,56 @@
+<!DOCTYPE configuration SYSTEM "configuration.dtd">
+<configuration>
+	
+	<back-end-configuration>
+		<query-engine-class>org.filteredpush.dataentry.backend.MockQueryEngine</query-engine-class>
+	</back-end-configuration>
+
+	<term-tuple-configuration>
+		<tuples-map>
+			<item key="name">
+				<item>first</item>
+				<item>last</item>
+			</item>
+		</tuples-map>
+	</term-tuple-configuration>
+
+	<front-end-configuration>
+	
+		<title-html>mock configuration title</title-html>
+		<blurb-html><p>mock configuration blurb</p></blurb-html>
+		
+		<!--
+			Mapping from query parameters to solr fields.
+			Over time, either the solr index or the client application could change:
+			this allows them to be decoupled.
+			TODO: It feels like, either this is gratuitous, or there should be something similar for a-name. Not sure which.
+		-->
+		<q-solr>
+			<item key="last">last</item>
+		</q-solr>
+	
+		<!--
+			This defines the fields available in the front end demo.
+			The "key" will used as the HTML "name" attribute on the inputs.
+			"label" will be the human readable label beside it.
+			"q-name" is the mapping of demo inputs to query terms. (You might want more than one field mapped to a single q-name.)
+			"a-name" is the mapping of the query response from solr to input fields.
+		-->
+		<input-fields>
+			<item key="first!@#%^?()name"	label="first &lt;&quot;test-escaping&quot;&gt;"					a-name="first"/>
+			<item key="last"	label="last"	q-name="last"	a-name="last"	default="Smith"/>
+		</input-fields>
+		
+		<!-- TODO: This doesn't work right now when there are input and output fields which share the same name. Fix it. -->
+		<!-- <controlled-vocabularies>
+			<item key="last">
+				<item key="Smith">1</item>
+				<item key="Van Smith">2</item>
+				<item key="Mc Smith">3</item>
+				<item key="Ben Smith">4</item>
+			</item>
+		</controlled-vocabularies> -->
+
+	</front-end-configuration>
+
+</configuration>

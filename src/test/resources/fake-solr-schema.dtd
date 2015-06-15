@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	NOTE:
+	
+	It's not actually possible to write a DTD for Solr schemas
+	(because the attribute names can be arbitrary), but having
+	this in place may help the IDE point out the worst errors.
+	
+	Please do extend it as needed.
+-->
+
+<!ELEMENT schema (fields, uniqueKey, copyField+, types)>
+<!ATTLIST schema 
+	name CDATA #IMPLIED
+	version CDATA #IMPLIED>
+	
+	<!ELEMENT fields (field*)>
+	
+		<!ELEMENT field EMPTY>
+		<!ATTLIST field 
+			name CDATA #IMPLIED
+			type CDATA #IMPLIED
+			indexed CDATA #IMPLIED
+			stored CDATA #IMPLIED
+			required CDATA #IMPLIED
+			multiValued CDATA #IMPLIED>
+		
+	<!ELEMENT uniqueKey (#PCDATA)>
+	
+	<!ELEMENT copyField EMPTY>
+	<!ATTLIST copyField 
+		source CDATA #IMPLIED
+		dest CDATA #IMPLIED>
+		
+	<!ELEMENT types (fieldType+)>
+	
+		<!ELEMENT fieldType (analyzer*)>
+		<!ATTLIST fieldType 
+			name CDATA #IMPLIED
+			class CDATA #IMPLIED
+			sortMissingLast CDATA #IMPLIED
+			omitNorms CDATA #IMPLIED>
+			
+			<!ELEMENT analyzer (charFilter*, tokenizer, filter*)>
+			<!ATTLIST analyzer
+				type CDATA #IMPLIED>
+				<!-- The attribute lists below are open-ended: Extend as needed. -->
+				
+				<!ELEMENT charFilter EMPTY>
+				<!ATTLIST charFilter
+					class CDATA #IMPLIED
+					replacement CDATA #IMPLIED
+					pattern CDATA #IMPLIED>
+				
+				<!ELEMENT tokenizer EMPTY>
+				<!ATTLIST tokenizer
+					class CDATA #IMPLIED
+					delimiter CDATA #IMPLIED>
+					
+				<!ELEMENT filter EMPTY>
+				<!ATTLIST filter
+					class CDATA #IMPLIED
+					replacement CDATA #IMPLIED
+					pattern CDATA #IMPLIED
+					replace CDATA #IMPLIED
+					preserve_original CDATA #IMPLIED
+					min CDATA #IMPLIED
+					max CDATA #IMPLIED
+					ignoreCase CDATA #IMPLIED
+					words CDATA #IMPLIED
+					format CDATA #IMPLIED>
+					

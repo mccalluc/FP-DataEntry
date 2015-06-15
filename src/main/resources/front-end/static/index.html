@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!--
+FP-DataEntry
+(C) 2014 President and Fellows of Harvard College
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+<html>
+	<head>
+		<title>${titleHtml}</title>
+		<style>
+			body  {font-family: Sans-Serif;}
+			label {display: block; clear: both;}
+			input {float: right;}
+			tr    {vertical-align: top;}
+			h1    {font-size: 2em;}
+			
+			.bookmarklet {
+				text-decoration: none;
+				color: black;
+				background: lightblue;
+				border-radius: 0.5em;
+				padding: 0 0.2em
+			}
+			
+			.hidden { /* Hiding in this way still makes it available to FF for the title of the bookmark. */
+				width: 0;
+				height: 0;
+				overflow: hidden;
+				display: inline-block
+			}
+		</style>
+		<script>
+			// Had a problem with tomcat deployments: if the url was like "http://.../fp-some-demo"
+			// relative links went back to the tomcat root. TODO: server redirect would be better?
+			if (document.location.pathname.match(/^\/[^/]+$/) && document.location.pathname != '/index.html') {
+				document.location.pathname = document.location.pathname + "/";
+			}
+		</script>
+	</head>
+	<body>
+		<table>
+			<tr>
+				<td style="width: 30em;">
+					${blurbHtml}
+					
+					<form autocomplete='off'>
+						${inputsHtml}
+						
+						<button id='fp-button' onClick='
+							if (typeof fp_data_entry_plugin == "undefined") {
+								fp_data_entry_plugin = new FpDataEntryPlugin({
+									// required:
+									url: "${baseUrl}", // Change this to point at the dataentry server you are using.
+									
+									iframe_parent_id: "iframe-parent-id", // If no such div exists, it will be created.
+									
+									// You probably want at least one or the other of these, though neither is required.
+									//iframe_parent_id: "fp-data-entry-plugin-goes-here",
+									iframe_parent_style: "position:fixed; bottom:0px; right:0px; background:#FFF; z-index:9999;",
+									// CollectionSpace has a z-index 1000 overlay.
+									
+									// These urls will be injected in the content of the iframe:
+									// If they are relative, they are relative to that page.
+									css_urls: [
+										"css/data-entry.css"
+										// Default css is provided on server, but feel free to point to a local css file to control the styling,
+										// either in addition to, or in place of this file.
+									],
+									js_urls: [
+										"${baseUrl}/js/demo-extra.js"
+										// Extra javascript can let the dataentry tool pull from a controlled vocabulary for your database.
+										// NOTE: In production use you should not reference demo-extra.js.
+									],
+									
+									// optional:
+									width: window.innerWidth * 0.55,
+									height: Math.max(window.innerHeight - 250, window.innerHeight * 0.5),
+									
+									// Which fields will be used to query the widget?
+									// None of these are required, but at least one should be present.
+									// Your field names should be unique.
+									q_names: ${qNamesJson},
+									
+									// As changes are made in the widget, which fields in the parent are changed?
+									// Typically, these are input name attributes, but if you need something more flexible,
+									// a function can be given in selector_function.
+									selectors: ${selectorsJson},
+									selector_function: ${selectorFunction},
+									
+									// Whether confirmation is explicitly required, or if data can automatically
+									// be copied over into the host interface.
+									require_confirmation: ${requireConfirmation},
+									
+									// Arbitrary JavaScript to be run against the target page.
+									// This can be useful when the target application needs to be
+									// prompted to create all the form fields we want to fill in.
+									prehook_function: function(){${preJs}}
+								});
+							};
+							fp_data_entry_plugin.main();
+							return false; // to prevent form submission.
+						'>Find!</button>
+						<button onClick='
+							(function(){
+								var inputs = document.getElementsByTagName("input");
+								for (var i = 0; i < inputs.length; i++) {
+									inputs.item(i).value = "";
+								}
+							})();
+							return false;
+						'>Clear</button>
+						
+						<!-- 
+							After you load the page, the href here will be filled in with a "javascript:" URI.
+							It can be saved as a bookmarklet in your browser. This is a way you can use the 
+							FP Data Entry Plugin without having to alter the HTML in your existing data entry
+							application. (The downside is that your config is crammed into an unreadable URI,
+							instead of the clear JSON structure above.)
+						-->
+						
+						<p>... or save this 
+						<a id='bookmarklet' onclick='alert("Drag this to your bookmarks menu,\nor right click and save it as a bookmark.");return false;'
+								class='bookmarklet' title='Drag this to your bookmarks menu, or right click and save it as a bookmark.'>
+							<span class='hidden'>${titleHtml} </span>bookmarklet</a>,
+						though it will only work on pages having forms with the same internal structure.</p>
+						
+						<hr/>
+						
+						<p>To learn more, read the <a href='https://sourceforge.net/p/filteredpush/svn/HEAD/tree/trunk/FP-DataEntry/' target='_blank'>documentation</a>, 
+						look at the <a href='config.xml' target='_blank'>configuration</a> for this instance, or save this
+						<a id='new-configuration' onclick='alert("Drag this to your bookmarks menu,\nor right click and save it as a bookmark.");return false;'
+								class='bookmarklet' title='Drag this to your bookmarks menu, or right click and save it as a bookmark.'
+								style='background: silver;'>
+							<span class='hidden'>new configuration </span>bookmarklet</a> and run it at a URL that interests you.</p>
+					</form>
+				</td>
+				<td>
+					<!-- 
+						If you want control where the iframe is inserted in the DOM, include a parent div:
+						<div id='fp-data-entry-plugin-goes-here'></div>
+					 -->
+				</td>
+			</tr>
+		</table>
+		
+		<script src='${baseUrl}/js/fp-data-entry-plugin.js?v0'></script>
+		<script>
+			(function() {
+				var emulate_onclick = document.getElementById('fp-button').getAttribute('onclick')
+					.replace(/\s+\/\/.*/g,'') // Strip comments
+					.replace(/\s+/g,' ') // Shrink spaces
+					.replace('return false;','');
+				var id = 'fp-data-entry-plugin-script';
+				var base_url = "${baseUrl}";
+				
+				var load_and_run =
+					'var emulate=function(){'+emulate_onclick+'};' // Will be wrapped in anonymous function: not a global.
+					+ 'if(!document.getElementById("'+id+'")){'
+					+   'var s=document.createElement("script");'
+					+   'document.body.appendChild(s);'
+					+   's.onload=function(){emulate()};'
+					+   's.id="'+id+'";'
+					+   's.src="'+base_url+'/js/fp-data-entry-plugin.js?v0";'
+					+ '}else{'
+					+   'emulate();'
+					+ '}';
+					
+				make_bookmarklet('bookmarklet', load_and_run);
+				
+				var new_configuration = 
+					'var s=document.createElement("script");'
+					+ 'document.body.appendChild(s);'
+					+ 's.src="'+base_url+'/js/fp-bootstrap.js?v0"';
+				make_bookmarklet('new-configuration', new_configuration);
+				
+				function make_bookmarklet(id, fragile_script) {
+					var mixed_content_message = 'This site is HTTPS, but the bookmarklet was generated by a plain HTTP server:\\n'
+						+ 'This is called \\"mixed content\\", and for security reasons is blocked by the browser.\\n\\n'
+						+ 'Try changing the URL of this page to plain \\"http:\\", but if that does not work,\\n'
+						+ 'the FP-DataEntry server will need to be run under HTTPS, and the bookmarklet regenerated.';
+					var wrapped_script = 
+						'if(document.location.protocol=="https:"&&"'+base_url+'".match(/^http:/)){'
+						+   'alert("'+mixed_content_message+'");'
+						+ '}else{'+fragile_script+'}'
+					var anon_function = '(function(){' + wrapped_script + '})();'; 
+					if (console) {
+						console.log(id + ':\n' + anon_function.replace(/\);/g,');\n').replace(/,/g,',\n\t'));
+					}
+					document.getElementById(id).href = 'javascript:' + encodeURIComponent(anon_function);
+				}
+			})()
+		</script>
+	</body>
+</html>

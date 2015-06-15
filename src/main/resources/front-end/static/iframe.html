@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<!--
+FP-DataEntry
+(C) 2014 President and Fellows of Harvard College
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+-->
+<html>
+	<head>
+		<title>Data Entry Tool</title>
+	</head>
+	<body>
+
+		<form id="input">
+			${qInputsHtml}
+		</form>
+
+		<hr/>
+
+		<div id="back-end-message">Fill any of the fields above, and we'll see if there are any matching records.</div>
+		<div id="front-end-message"></div>
+
+		<hr/>
+
+		<form id="output"></form>
+		
+		
+
+		<script src="js/jquery-1.10.2.min.js"></script>
+
+		<script>fp={};</script>
+		<script src="js/CONFIG.js?v0"></script>
+		
+		<script src="js/utils-data.js?v0"></script>
+		<script src="js/utils-ui.js?v0"></script>
+		<script src="js/utils-callback.js?v0"></script>
+		
+		<script src="js/core.js?v0"></script>
+	</body>
+</html>

@@ -1,0 +1,369 @@
+<!DOCTYPE configuration>
+<configuration>
+	
+	<back-end-configuration>
+		<solr-directory>${solr}</solr-directory>
+		<solr-files>
+			<item key="schema.xml">
+				<!-- For more information, see http://wiki.apache.org/solr/SchemaXml -->
+				<schema name="example" version="1.5">
+					<fields>
+						<field name="_fp_internal_id" type="fpID" indexed="true" stored="false" required="true" multiValued="false"/>
+						<!-- NOTE: Everything below, except for the *_index fields, should correspond to DwcTuples. 
+						(... which are in turn composed of DwcTerms.) The values stored are actually JSON arrays, and not plain text. -->
+						<field name="recordedBy" type="fpCollectorName" indexed="true" stored="true" required="false" multiValued="false"/>
+						<field name="geography_index" type="fpGeography" indexed="true" stored="false" required="false" multiValued="true"/>
+						<field name="country" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+						<field name="stateCounty" type="string" indexed="false" stored="true" required="false" multiValued="false"/>
+						<field name="verbatimLocality" type="string" indexed="false" stored="true" required="false" multiValued="false"/> 
+						<!-- GBIF has lat/long *and* verbatim-lat/verbatim-long. Perhaps ignore one or the other, and change back to multiValued="false"? -->
+						<field name="latitudeLongitude" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+						<field name="eventDate" type="fpDate" indexed="true" stored="true" required="false" multiValued="false"/>
+						<field name="taxon_index" type="fpTaxon" indexed="true" stored="false" required="false" multiValued="true"/> 
+						<!-- When pulling from the SQL, we took higher-level taxa to be single-valued... 
+						but the GBIF download has a normal and a verbatim-* for each of these, so make them multi. -->
+						<field name="kingdom" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+						<field name="phylum" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+						<field name="class" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+						<field name="order" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+						<field name="family" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+						<field name="scientificName" type="string" indexed="false" stored="true" required="false" multiValued="true"/>
+					</fields>
+					<uniqueKey>_fp_internal_id</uniqueKey>
+					<copyField source="kingdom" dest="taxon_index"/>
+					<copyField source="phylum" dest="taxon_index"/>
+					<copyField source="class" dest="taxon_index"/>
+					<copyField source="order" dest="taxon_index"/>
+					<copyField source="family" dest="taxon_index"/>
+					<copyField source="scientificName" dest="taxon_index"/>
+					<copyField source="country" dest="geography_index"/>
+					<copyField source="stateCounty" dest="geography_index"/>
+					<copyField source="verbatimLocality" dest="geography_index"/>
+					<types>
+						<!-- Remember that everything is wrapped in a JSON list, so some kind of tokenization is essential, even for simple fields.
+						<fieldType name="fpMinimallySearchable" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+							<analyzer>
+								<tokenizer class="solr.StandardTokenizerFactory"/>
+							</analyzer>
+						</fieldType>
+						-->
+						<fieldType name="fpCollectorName" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+							<analyzer>
+								<charFilter class="solr.PatternReplaceCharFilterFactory" replacement="" pattern="^(?i)col[^:]*:"/>
+								<charFilter class="solr.PatternReplaceCharFilterFactory" replacement="" pattern="(?i)\b(du|de|dr|van|den)\b"/>
+								<tokenizer class="solr.KeywordTokenizerFactory"/>
+								<filter class="solr.ASCIIFoldingFilterFactory"/>
+								<filter class="solr.LowerCaseFilterFactory"/> <!-- Capture just the first two sequences of two or more letters. -->
+								<filter class="solr.PatternCaptureGroupFilterFactory" preserve_original="false"
+									pattern="^\W*(?:\w\W+)*(\p{L}{2,})(?:[^,&amp;/\p{L}]+(?:\p{L}[^,&amp;/\p{L}]+)*(\p{L}{2,}))?"/>
+								<!-- 
+								             Skip while no more than one letter in a row
+								                           2-or-more letters in a row
+								                                      Optionally, skip more isolated letters
+								                                         and give up if we see separating punctuation
+								                                                                          And get the second 2-or-more letters.
+								             ^\W*(?:\w\W+)*
+								                           (\p{L}{2,})
+								                                      (?:[^,&amp;/\p{L}]+(?:\p{L}[^,&amp;/\p{L}]+)*           )?
+								                                                                                   (\p{L}{2,})
+								-->
+							</analyzer>
+						</fieldType>
+						<fieldType name="fpTaxon" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+							<analyzer>
+								<tokenizer class="solr.LowerCaseTokenizerFactory"/> <!-- Names should be plain ascii already. -->
+							</analyzer>
+						</fieldType>
+						<fieldType name="fpGeography" class="solr.TextField" sortMissingLast="true" omitNorms="true">
+							<analyzer>
+								<tokenizer class="solr.StandardTokenizerFactory"/>
+								<filter class="solr.LengthFilterFactory" min="2" max="1023"/><!-- Max is arbitrary, but required. -->
+								<filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords_en.txt" format="snowball"/> 
+								<!-- Used to include: stopwords_es.txt, stopwords_de.txt, stopwords_fr.txt 
+									... but that made many 2-letter country abbreviations unsearchable. 
+									Even now, "IN" (for India) or "BE" (Belgium) won't work. I'm not sure what the right trade-off is. 
+									TODO: Do a real index with it, and see if having stopwords makes an appreciable difference. (indexing time / index size / search time) -->
+								<filter class="solr.ASCIIFoldingFilterFactory"/>
+								<filter class="solr.LowerCaseFilterFactory"/>
+							</analyzer>
+						</fieldType>
+						<fieldType name="fpDate" class="solr.TextField" sortMissingLast="true" omitNorms="true"> 
+							<!-- Given YYYY-MM-DD, generate these tokens for indexing: YYYY YYYY-MM YYYY-MM-DD 
+							... but DO NOT tokenize queries: YYYY-MM should match YYYY-MM and YYYY-MM-DD but not plain YYYY -->
+							<analyzer type="index"> 
+								<!-- The input is actually wrapped in a JSON list, so we need to strip the extraneous characters. -->
+								<charFilter class="solr.PatternReplaceCharFilterFactory" pattern="[^0-9-]" replacement=""/>
+								<tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="-"/>
+							</analyzer>
+							<analyzer type="query">
+								<tokenizer class="solr.KeywordTokenizerFactory"/>
+							</analyzer>
+						</fieldType>
+						<fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+						<fieldType name="fpID" class="solr.StrField" sortMissingLast="true"/>
+					</types>
+				</schema>
+			</item>
+			<item key="solrconfig.xml">
+				<!-- For more information, see http://wiki.apache.org/solr/SolrConfigXml. -->
+				<config>
+					<luceneMatchVersion>4.5</luceneMatchVersion>
+					<requestHandler name="/select" class="solr.SearchHandler">
+						<lst name="defaults">
+							<int name="rows">10</int>
+							<str name="df">text</str>
+						</lst>
+					</requestHandler>
+					<requestHandler name="/update" class="solr.UpdateRequestHandler"/>
+				</config> 
+			</item>
+			<item key="stopwords_en.txt">
+				# TODO: test this: Is the leading white-space ok?
+				# Standard English stop words taken from Lucene's StopAnalyzer
+				a
+				an
+				and
+				are
+				as
+				at
+				be
+				but
+				by
+				for
+				if
+				in
+				into
+				is
+				it
+				no
+				not
+				of
+				on
+				or
+				such
+				that
+				the
+				their
+				then
+				there
+				these
+				they
+				this
+				to
+				was
+				will
+				with
+			</item>
+		</solr-files>
+	</back-end-configuration>
+
+	<server-configuration>
+		<port>8888</port><!-- Only used by Jetty; Ignored by Tomcat. -->
+	</server-configuration>
+
+	<term-tuple-configuration>
+		<!--
+			This controls the ordering and grouping of fields in your suggested matches.
+			The outer items ("tuples") must correspond to fields in your solr index.
+			The inner items ("terms") must correspond to fields in your data entry application.
+		-->
+		<tuples-map>
+			<item key="recordedBy">
+				<item>recordedBy</item>
+			</item>
+		
+		 	<!-- Clumping of geography is kind of arbitrary... -->
+			<item key="country">
+				<item>countryCode</item>
+				<item>country</item>
+			</item>
+			<item key="stateCounty">
+				<item>stateProvince</item>
+				<item>county</item>
+			</item>
+			<item key="verbatimLocality">
+				<item>verbatimLocality</item>
+			</item>
+			<item key="latitudeLongitude">
+				<item>decimalLatitude</item>
+				<item>decimalLongitude</item>
+			</item>
+
+			<item key="eventDate">
+				<item>eventDate</item>
+			</item>
+
+			<item key="kingdom">
+				<item>kingdom</item>
+			</item>
+			<item key="phylum">
+				<item>phylum</item>
+			</item>
+			<item key="class">
+				<item>class</item>
+			</item>
+			<item key="order">
+				<item>order</item>
+			</item>
+			<item key="family">
+				<item>family</item>
+			</item>
+			<item key="scientificName">
+				<item>scientificName</item>
+			</item>
+			
+		</tuples-map>
+	</term-tuple-configuration>
+
+	<indexer-configuration>
+		<!-- Replace this with the full path of the file you want to read. -->
+		<ingest-file>
+			${archive}
+		</ingest-file>
+		
+		<!-- Optional. Either 'FILE' or 'GBIF'. Default is 'FILE'. -->
+		<!-- <ingest-type></ingest-type> -->
+		
+		<!-- Optional. Default is 'UTF-8'. -->
+		<!-- <encoding></encoding> -->
+		
+		<!-- Optional. Whether to try to correct bad character encodings. Default is 'NONE'. -->
+		<encoding-correction>FIX_A_TILDE</encoding-correction>
+		
+		<!-- Optional. Default is the tab character. -->
+		<!-- <delimiter></delimiter> -->
+		
+		<!-- Optional. Character which quotes strings containing the delimiter. -->
+		<!-- <quote-character></quote-character> -->
+		
+		<!-- Optional. How a database null is represented in export. Usually 'NULL' or '\N'. -->
+		<!-- <null-marker></null-marker> -->
+		
+		<!-- Optional. If some column title does not match exactly match the Term, a mapping can be given here. -->
+		<column-map>
+			<item key="latitude">decimalLatitude</item>
+			<item key="longitude">decimalLongitude</item>
+			<item key="locality">verbatimLocality</item>
+			<item key="state_province">stateProvince</item>
+			<item key="recorded_by">recordedBy</item>
+			<item key="specific_epithet">scientificName</item>
+			<item key="country_code">country</item>
+			<item key="event_date">eventDate</item>
+		</column-map>
+	</indexer-configuration>
+
+	<front-end-configuration>
+	
+		<title-html>DEMO: FilteredPush Data Entry Plugin</title-html>
+		<blurb-html>
+			<p>
+				This is just a tiny, self-contained demo of the FilteredPush Data Entry Plugin.
+			</p>
+			<p>
+				Sometimes individual instances of objects which have been "mass-produced"
+				need to be cataloged. Books in a library are the obvious example, but
+				plant specimens in a herbarium or coins in a museum are similar.
+				There may be a source of bulk records, but you can't just load
+				them into your database: At the very least, you need to link 
+				the generic records to your particular instances;
+				You might also want to tweak the bulk records to better describe 
+				your particular instances. FP-DataEntry can make this kind of work easier.
+			</p>
+		</blurb-html>
+		
+		<!--
+			Mapping from query parameters to solr fields.
+			Over time, either the solr index or the client application could change:
+			this allows them to be decoupled.
+			TODO: It feels like, either this is gratuitous, or there should be something similar for a-name. Not sure which.
+		-->
+		<q-solr>
+			<item key="collector">recordedBy</item>
+			<item key="taxon">taxon_index</item>
+			<item key="geography">geography_index</item>
+			<item key="date">eventDate</item>
+		</q-solr>
+	
+		<!--
+			The "key" will usually be the name attribute of the input, but if a "selector-function" is given below,
+			it can be any string the selector-function can use to identify a unique input.
+			
+			The "label" is the human readable label beside it. (The name is used if unspecified.)
+			
+			At query time, inputs are mapped to query parameters with "q-name".
+			
+			When the results return, they are mapped back to inputs with "a-name".
+		-->
+		<input-fields>
+			<item key="my_collector"	label="collector name"		q-name="collector"	a-name="recordedBy"/>
+			<item key="my_collector_id"	label="collector ID"							a-name="recordedBy_id"/>
+			<item key="my_country"		label="country"				q-name="geography"	a-name="country"	default="Sweden" />
+			<item key="my_province"		label="province"			q-name="geography"	a-name="stateProvince"/>
+			<item key="my_county"		label="county"				q-name="geography"	a-name="county"/>
+			<item key="my_locality"		label="locality"			q-name="geography"	a-name="verbatimLocality"/>
+			<item key="my_date"			label="collection date"		q-name="date"		a-name="eventDate"/>
+			<item key="my_name"			label="scientific name"		q-name="taxon"		a-name="scientificName"/>
+		</input-fields>
+
+		<!--
+			This lists the terms where the UI should offer choices from a controlled vocabulary.
+			The sub-elements, if present, support a mock-up of the AJAX interface which you
+			would need to implement on your collection management application.
+		-->
+		<controlled-vocabularies>
+			<item key="recordedBy">
+				<item key="Ahlner, Sten">1</item>
+				<item key="Magnus E. Fries">2</item>
+				<item key="S. Ahlner">1</item>
+				<item key="Sten Ahlner">1</item>
+				<item key="S.W. Sundell">3</item>
+				<item key="Allen, A.">4</item>
+				<item key="Brown, B.">5</item>
+				<item key="Clark, C.">6</item>
+				<item key="Davis, D.">7</item>
+				<item key="Evans, E.">8</item>
+				<item key="Flores, F.">9</item>
+				<item key="Garcia, G.">10</item>
+				<item key="Hernandez, H.">11</item>
+				<item key="Ingram, I.">12</item>
+				<item key="Johnson, J.">13</item>
+				<item key="King, K.">14</item>
+				<item key="Lopez, L.">15</item>
+				<item key="Miller, M.">16</item>
+				<item key="Nelson, N.">17</item>
+				<item key="Ortiz, O.">18</item>
+				<item key="Perez, P.">19</item>
+				<item key="Quinn, Q.">20</item>
+				<item key="Rodriguez, R.">21</item>
+				<item key="Smith, S.">22</item>
+				<item key="Taylor, T.">23</item>
+				<item key="Underwood, U.">24</item>
+				<item key="Vasquez, V.">25</item>
+				<item key="Williams, W.">26</item>
+				<item key="Young, Y.">27</item>
+				<item key="Zimmerman, Z.">28</item>
+			</item>
+		</controlled-vocabularies>
+		
+		<require-confirmation>true</require-confirmation>
+		
+		<selector-function>
+			function(selector){
+				if (typeof selector == "string") {
+					if (selector.match(/^\w+$/)) {
+						return document.getElementsByName(selector).item(0);
+					} else {
+						// If the site has jQuery, this can be a useful idiom to keep easy things easy, and make hard things possible.
+						return jQuery(selector)[0];
+					}
+				}
+			}
+		</selector-function>
+
+		<pre-js>
+			alert('pre-js works!');
+		</pre-js>
+
+	</front-end-configuration>
+
+</configuration>
