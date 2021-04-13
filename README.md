@@ -1,9 +1,3 @@
-*This is a fork of a project I did at the Harvard Herbaria. It is,
-unfortunately, hosted by SourceForge, and I'd prefer not to link to
-them any more because of their business practices.*
-
-(For a really quick introduction, glance at the [screenshots](http://wiki.filteredpush.org/wiki/FP-DataEntry).)
-
 # Introduction
 
 The FP-DataEntry plugin speeds up data entry by helping you find records for 
@@ -55,10 +49,9 @@ need to be run in turn:
 	SolrIndexer
 	BothEndsHandler
 
-Each is passed a single argument: the path to a configuration file. For each
-of the demos linked above, the configuration can be inspected at `/config.xml`:
-For example, [fp-quarters-demo/config.xml](http://firuta.huh.harvard.edu:8080/fp-quarters-demo/config.xml). To see all the possible
-options in one place, the [DTD](FP-DataEntry/src/main/resources/configuration.dtd) is also useful.
+Each is passed a single argument: the path to a configuration file.
+To see all the possible options in one place,
+the [DTD](FP-DataEntry/src/main/resources/configuration.dtd) is also useful.
 
 
 ## Running tests
@@ -77,7 +70,6 @@ Or you can also check the test coverage:
 Import the project, and then run the `main()` method of `org.filteredpush.dataentry.Main`.
 Equivalently, from the command line:
 
-	$ svn checkout svn://svn.code.sf.net/p/filteredpush/svn/trunk/FP-DataEntry
 	$ cd FP-DataEntry
 	$ mvn clean package assembly:single -Dmaven.test.skip=true
 	$ java -jar target/FP-DataEntry-jetty-1.0-SNAPSHOT-jar-with-dependencies.jar
@@ -91,7 +83,6 @@ The demo will be available at http://localhost:8888
 
 For more control, you'll probably use at least a basic wrapper script:
 
-	$ svn checkout svn://svn.code.sf.net/p/filteredpush/svn/trunk/FP-DataEntry
 	$ bash FP-DataEntry/demos/run-jetty.sh
 
 Then visit http://localhost:8888 to see it in action. (If 8888 is already in
@@ -106,7 +97,6 @@ applications, the process is a little more complicated, but this script
 outlines how a Tomcat deployment could work. You would certainly want to tweak
 it for your needs:
 
-	$ svn checkout svn://svn.code.sf.net/p/filteredpush/svn/trunk/FP-DataEntry
 	$ bash FP-DataEntry/demos/run-tomcat.sh
 
 (The script needs to move the war file to `$CATALINA_BASE`, and you may be 
