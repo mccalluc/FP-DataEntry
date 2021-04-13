@@ -22,26 +22,6 @@ The software consists of a server which responds to queries about a particular
 set of records, and client-side Javascript which connects your existing 
 collection management web application to the FP-DataEntry server.
 
-Feature demos:
-
-- [State quarters](http://firuta.huh.harvard.edu:8080/fp-quarters-demo/) (basic)
-- [Muppets](http://firuta.huh.harvard.edu:8080/fp-muppets-demo/) (multi-valued fields, grouped fields, fuzzy searches)
-- [Lichens](http://firuta.huh.harvard.edu:8080/fp-lichens-demo/) (encoding correction, local controlled vocabularies)
-
-Application integration demos:
-
-- [Specify](http://firuta.huh.harvard.edu:8080/fp-specify7-demo/) (also demonstrates the `pre-js` and `selector-function` configuration options.)
-- [Koha](http://firuta.huh.harvard.edu:8080/fp-koha-demo/)
-- [ArchivesSpace](http://firuta.huh.harvard.edu:8080/fp-archivesspace-demo/)
-- [CollectionSpace](http://firuta.huh.harvard.edu:8080/fp-collectionspace-demo/)
-- [Omeka](http://firuta.huh.harvard.edu:8080/fp-omeka-demo/)
-
-Data source integration demos:
-
-- [OpenLibrary](http://firuta.huh.harvard.edu:8080/fp-openlibrary-demo/)
-- [GBIF API](http://firuta.huh.harvard.edu:8080/fp-gbifapi-demo/)
-
-
 # Requirements
 
 To build: Java 6 or higher and Maven are required.
