@@ -51,7 +51,7 @@ need to be run in turn:
 
 Each is passed a single argument: the path to a configuration file.
 To see all the possible options in one place,
-the [DTD](FP-DataEntry/src/main/resources/configuration.dtd) is also useful.
+the [DTD](https://github.com/mccalluc/FP-DataEntry/blob/master/src/main/resources/configuration.dtd) is also useful.
 
 
 ## Running tests
